@@ -203,17 +203,25 @@ public class URLNavigator {
     ///
     /// - Parameter URL: The URL to find view controllers.
     /// - Parameter from: The navigation controller which is used to push a view controller. Use application's top-most
+    /// - Parameter previousURL: The URL of the previous VC, if any. Used to avoid pushing the current view controller.
     ///     view controller if `nil` is specified. `nil` by default.
     /// - Parameter animated: Whether animates view controller transition or not. `true` by default.
     ///
     /// - Returns: The pushed view controller. Returns `nil` if there's no matching view controller or failed to push
     ///            a view controller.
     public func pushURL(URL: URLConvertible,
+                        previousURL: URLConvertible? = nil,
                         from: UINavigationController? = nil,
                         animated: Bool = true) -> UIViewController? {
+        
         guard let viewController = self.viewControllerForURL(URL) else {
             return nil
         }
+        
+        if URL.URLStringValue == previousURL?.URLStringValue {
+            return nil
+        }
+        
         return self.push(viewController, from: from, animated: animated)
     }
 

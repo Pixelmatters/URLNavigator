@@ -46,4 +46,6 @@ public protocol URLNavigable {
     ///     `myapp://user/<id>` and the given URL is `myapp://user/123`, values will be `["id": "123"]`.
     init?(URL: URLConvertible, values: [String: AnyObject])
 
+    /// Force the user to store the URL that initialized the instance
+    var URL: URLConvertible? {get set}
 }
