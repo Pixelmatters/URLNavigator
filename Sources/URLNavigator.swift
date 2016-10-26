@@ -214,11 +214,11 @@ public class URLNavigator {
                         from: UINavigationController? = nil,
                         animated: Bool = true) -> UIViewController? {
         
-        guard let viewController = self.viewControllerForURL(URL) else {
+        if URL.URLStringValue == previousURL?.URLStringValue {
             return nil
         }
         
-        if URL.URLStringValue == previousURL?.URLStringValue {
+        guard let viewController = self.viewControllerForURL(URL) else {
             return nil
         }
         
