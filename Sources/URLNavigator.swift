@@ -55,16 +55,16 @@ import UIKit
 /// - Note: Use `UIApplication.openURL()` method to launch other applications or to open URLs in application level.
 ///
 /// - SeeAlso: `URLNavigable`
-public class URLNavigator {
+open class URLNavigator {
 
     /// A closure type which has URL and values for parameters.
-    public typealias URLOpenHandler = (URL: URLConvertible, values: [String: AnyObject]) -> Bool
+    public typealias URLOpenHandler = (_ URL: URLConvertible, _ values: [String: AnyObject]) -> Bool
 
     /// A dictionary to store URLNaviables by URL patterns.
-    private(set) var URLMap = [String: URLNavigable.Type]()
+    fileprivate(set) var URLMap = [String: URLNavigable.Type]()
 
     /// A dictionary to store URLOpenHandlers by URL patterns.
-    private(set) var URLOpenHandlers = [String: URLOpenHandler]()
+    fileprivate(set) var URLOpenHandlers = [String: URLOpenHandler]()
 
     /// A default scheme. If this value is set, it's available to map URL paths without schemes.
     ///
@@ -76,10 +76,10 @@ public class URLNavigator {
     ///
     ///     Navigator.map("myapp://user/<int:id>", UserViewController.self)
     ///     Navigator.map("myapp://post/<title>", PostViewController.self)
-    public var scheme: String? {
+    open var scheme: String? {
         didSet {
-            if let scheme = self.scheme where scheme.containsString("://") == true {
-                self.scheme = scheme.componentsSeparatedByString("://")[0]
+            if let scheme = self.scheme, scheme.contains("://") == true {
+                self.scheme = scheme.components(separatedBy: "://")[0]
             }
         }
     }
@@ -97,7 +97,7 @@ public class URLNavigator {
     /// Returns a default navigator. A global constant `Navigator` is a shortcut of `URLNavigator.defaultNavigator()`.
     ///
     /// - SeeAlso: `Navigator`
-    public static func defaultNavigator() -> URLNavigator {
+    open static func defaultNavigator() -> URLNavigator {
         struct Shared {
             static let defaultNavigator = URLNavigator()
         }
@@ -108,13 +108,13 @@ public class URLNavigator {
     // MARK: URL Mapping
 
     /// Map an `URLNavigable` to an URL pattern.
-    public func map(URLPattern: URLConvertible, _ navigable: URLNavigable.Type) {
+    open func map(_ URLPattern: URLConvertible, _ navigable: URLNavigable.Type) {
         let URLString = URLNavigator.normalizedURL(URLPattern, scheme: self.scheme).URLStringValue
         self.URLMap[URLString] = navigable
     }
 
     /// Map an `URLOpenHandler` to an URL pattern.
-    public func map(URLPattern: URLConvertible, _ handler: URLOpenHandler) {
+    open func map(_ URLPattern: URLConvertible, _ handler: @escaping URLOpenHandler) {
         let URLString = URLNavigator.normalizedURL(URLPattern, scheme: self.scheme).URLStringValue
         self.URLOpenHandlers[URLString] = handler
     }
@@ -136,15 +136,15 @@ public class URLNavigator {
     /// - Parameter from: The array of URL patterns.
     ///
     /// - Returns: A tuple of URL pattern string and a dictionary of URL placeholder values.
-    static func matchURL(URL: URLConvertible, scheme: String? = nil,
+    static func matchURL(_ URL: URLConvertible, scheme: String? = nil,
                          from URLPatterns: [String]) -> (String, [String: AnyObject])? {
         let normalizedURLString = URLNavigator.normalizedURL(URL, scheme: scheme).URLStringValue
-        let URLPathComponents = normalizedURLString.componentsSeparatedByString("/") // e.g. ["myapp:", "user", "123"]
+        let URLPathComponents = normalizedURLString.components(separatedBy: "/") // e.g. ["myapp:", "user", "123"]
 
         outer: for URLPattern in URLPatterns {
             // e.g. ["myapp:", "user", "<int:id>"]
-            let URLPatternPathComponents = URLPattern.componentsSeparatedByString("/")
-            let containsPathPlaceholder = URLPatternPathComponents.contains({ $0.hasPrefix("<path:") })
+            let URLPatternPathComponents = URLPattern.components(separatedBy: "/")
+            let containsPathPlaceholder = URLPatternPathComponents.contains(where: { $0.hasPrefix("<path:") })
             guard containsPathPlaceholder || URLPatternPathComponents.count == URLPathComponents.count else {
                 continue
             }
@@ -152,7 +152,7 @@ public class URLNavigator {
             var values = [String: AnyObject]()
 
             // e.g. ["user", "<int:id>"]
-            for (i, component) in URLPatternPathComponents.enumerate() {
+            for (i, component) in URLPatternPathComponents.enumerated() {
                 guard i < URLPathComponents.count else {
                     continue outer
                 }
@@ -160,7 +160,7 @@ public class URLNavigator {
                     URLPathComponents: URLPathComponents,
                     atIndex: i
                 )
-                if let key = info?.0, value = info?.1 {
+                if let key = info?.0, let value = info?.1 {
                     values[key] = value // e.g. ["id": 123]
                     if component.hasPrefix("<path:") {
                         break // there's no more placeholder after <path:>
@@ -179,7 +179,7 @@ public class URLNavigator {
     ///
     /// - Parameter URL: The URL to find view controllers.
     /// - Returns: A match view controller or `nil` if not matched.
-    public func viewControllerForURL(URL: URLConvertible) -> UIViewController? {
+    open func viewControllerForURL(_ URL: URLConvertible) -> UIViewController? {
         if let (URLPattern, values) = URLNavigator.matchURL(URL, scheme: self.scheme, from: Array(self.URLMap.keys)) {
             let navigable = self.URLMap[URLPattern]
             return navigable?.init(URL: URL, values: values) as? UIViewController
@@ -209,7 +209,7 @@ public class URLNavigator {
     ///
     /// - Returns: The pushed view controller. Returns `nil` if there's no matching view controller or failed to push
     ///            a view controller.
-    public func pushURL(URL: URLConvertible,
+    open func pushURL(_ URL: URLConvertible,
                         previousURL: URLConvertible? = nil,
                         from: UINavigationController? = nil,
                         animated: Bool = true) -> UIViewController? {
@@ -233,7 +233,7 @@ public class URLNavigator {
     /// - Parameter animated: Whether animates view controller transition or not. `true` by default.
     ///
     /// - Returns: The pushed view controller. Returns `nil` if failed to push a view controller.
-    public func push(viewController: UIViewController,
+    open func push(_ viewController: UIViewController,
                      from: UINavigationController? = nil,
                      animated: Bool = true) -> UIViewController? {
         guard let navigationController = from ?? UIViewController.topMostViewController()?.navigationController else {
@@ -267,7 +267,7 @@ public class URLNavigator {
     ///
     /// - Returns: The presented view controller. Returns `nil` if there's no matching view controller or failed to
     ///     present a view controller.
-    public func presentURL(URL: URLConvertible,
+    open func presentURL(_ URL: URLConvertible,
                            wrap: Bool = false,
                            from: UIViewController? = nil,
                            animated: Bool = true,
@@ -289,7 +289,7 @@ public class URLNavigator {
     /// - Parameter completion: Called after the transition has finished.
     ///
     /// - Returns: The presented view controller. Returns `nil` if failed to present a view controller.
-    public func present(viewController: UIViewController,
+    open func present(_ viewController: UIViewController,
                         wrap: Bool = false,
                         from: UIViewController? = nil,
                         animated: Bool = true,
@@ -299,9 +299,9 @@ public class URLNavigator {
         }
         if wrap {
             let navigationController = UINavigationController(rootViewController: viewController)
-            fromViewController.presentViewController(navigationController, animated: animated, completion: nil)
+            fromViewController.present(navigationController, animated: animated, completion: nil)
         } else {
-            fromViewController.presentViewController(viewController, animated: animated, completion: nil)
+            fromViewController.present(viewController, animated: animated, completion: nil)
         }
         return viewController
     }
@@ -314,11 +314,11 @@ public class URLNavigator {
     /// - Parameter URL: The URL to find `URLOpenHandler`s.
     ///
     /// - Returns: The return value of the matching `URLOpenHandler`. Returns `false` if there's no match.
-    public func openURL(URL: URLConvertible) -> Bool {
+    open func openURL(_ URL: URLConvertible) -> Bool {
         let URLOpenHandlersKeys = Array(self.URLOpenHandlers.keys)
         if let (URLPattern, values) = URLNavigator.matchURL(URL, scheme: self.scheme, from: URLOpenHandlersKeys) {
             let handler = self.URLOpenHandlers[URLPattern]
-            if handler?(URL: URL, values: values) == true {
+            if handler?(URL, values) == true {
                 return true
             }
         }
@@ -329,16 +329,16 @@ public class URLNavigator {
     // MARK: Utils
 
     /// Returns an scheme-appended `URLConvertible` if given `URL` doesn't have its scheme.
-    static func URLWithScheme(scheme: String?, _ URL: URLConvertible) -> URLConvertible {
+    static func URLWithScheme(_ scheme: String?, _ URL: URLConvertible) -> URLConvertible {
         let URLString = URL.URLStringValue
-        if let scheme = scheme where !URLString.containsString("://") {
+        if let scheme = scheme, !URLString.contains("://") {
             #if DEBUG
                 if !URLPatternString.hasPrefix("/") {
                     NSLog("[Warning] URL pattern doesn't have leading slash(/): '\(URL)'")
                 }
             #endif
             return scheme + ":/" + URLString
-        } else if scheme == nil && !URLString.containsString("://") {
+        } else if scheme == nil && !URLString.contains("://") {
             assertionFailure("Either navigator or URL should have scheme: '\(URL)'") // assert only in debug build
         }
         return URLString
@@ -353,44 +353,44 @@ public class URLNavigator {
     /// - Parameter URL: The dirty URL to be normalized.
     ///
     /// - Returns: The normalized URL. Returns `nil` if the pecified URL is invalid.
-    static func normalizedURL(dirtyURL: URLConvertible, scheme: String? = nil) -> URLConvertible {
+    static func normalizedURL(_ dirtyURL: URLConvertible, scheme: String? = nil) -> URLConvertible {
         guard dirtyURL.URLValue != nil else {
             return dirtyURL
         }
         var URLString = URLNavigator.URLWithScheme(scheme, dirtyURL).URLStringValue
-        URLString = URLString.componentsSeparatedByString("?")[0].componentsSeparatedByString("#")[0]
+        URLString = URLString.components(separatedBy: "?")[0].components(separatedBy: "#")[0]
         URLString = self.replaceRegex(":/{3,}", "://", URLString)
         URLString = self.replaceRegex("(?<!:)/{2,}", "/", URLString)
         URLString = self.replaceRegex("/+$", "", URLString)
         return URLString
     }
 
-    static func placeholderKeyValueFromURLPatternPathComponent(component: String,
+    static func placeholderKeyValueFromURLPatternPathComponent(_ component: String,
                                                                URLPathComponents: [String],
                                                                atIndex index: Int) -> (String, AnyObject)? {
         guard component.hasPrefix("<") && component.hasSuffix(">") else {
             return nil
         }
 
-        let start = component.startIndex.advancedBy(1)
-        let end = component.endIndex.advancedBy(-1)
+        let start = component.characters.index(component.startIndex, offsetBy: 1)
+        let end = component.characters.index(component.endIndex, offsetBy: -1)
         let placeholder = component[start..<end] // e.g. "<int:id>" -> "int:id"
 
-        let typeAndKey = placeholder.componentsSeparatedByString(":") // e.g. ["int", "id"]
+        let typeAndKey = placeholder.components(separatedBy: ":") // e.g. ["int", "id"]
         if typeAndKey.count == 0 { // e.g. component is "<>"
             return nil
         }
         if typeAndKey.count == 1 { // untyped placeholder
-            return (placeholder, URLPathComponents[index])
+            return (placeholder, URLPathComponents[index] as AnyObject)
         }
 
         let (type, key) = (typeAndKey[0], typeAndKey[1]) // e.g. ("int", "id")
         let value: AnyObject?
         switch type {
-        case "int": value = Int(URLPathComponents[index]) // e.g. 123
-        case "float": value = Float(URLPathComponents[index]) // e.g. 123.0
-        case "path": value = URLPathComponents[index..<URLPathComponents.count].joinWithSeparator("/")
-        default: value = URLPathComponents[index]
+        case "int": value = Int(URLPathComponents[index]) as AnyObject? // e.g. 123
+        case "float": value = Float(URLPathComponents[index]) as AnyObject? // e.g. 123.0
+        case "path": value = URLPathComponents[index..<URLPathComponents.count].joined(separator: "/") as AnyObject?
+        default: value = URLPathComponents[index] as AnyObject?
         }
 
         if let value = value {
@@ -399,13 +399,13 @@ public class URLNavigator {
         return nil
     }
 
-    static func replaceRegex(pattern: String, _ repl: String, _ string: String) -> String {
+    static func replaceRegex(_ pattern: String, _ repl: String, _ string: String) -> String {
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
             return string
         }
         let mutableString = NSMutableString(string: string)
         let range = NSMakeRange(0, string.characters.count)
-        regex.replaceMatchesInString(mutableString, options: [], range: range, withTemplate: repl)
+        regex.replaceMatches(in: mutableString, options: [], range: range, withTemplate: repl)
         return mutableString as String
     }
 

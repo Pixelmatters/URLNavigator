@@ -110,12 +110,12 @@ class URLNavigatorPublicTests: XCTestCase {
 
     func testOpenURL_URLOpenHandler() {
         self.navigator.map("myapp://ping") { URL, values in
-            NSNotificationCenter.defaultCenter().postNotificationName("Ping", object: nil, userInfo: nil)
+            NotificationCenter.default.post(name: Notification.Name(rawValue: "Ping"), object: nil, userInfo: nil)
             return true
         }
-        self.expectationForNotification("Ping", object: nil, handler: nil)
+        self.expectation(forNotification: "Ping", object: nil, handler: nil)
         XCTAssertTrue(self.navigator.openURL("myapp://ping"))
-        self.waitForExpectationsWithTimeout(1, handler: nil)
+        self.waitForExpectations(timeout: 1, handler: nil)
     }
 
     func testOpenURL_URLNavigable() {
@@ -210,12 +210,12 @@ class URLNavigatorPublicTests: XCTestCase {
     func testSchemeOpenURL_URLOpenHandler() {
         self.navigator.scheme = "myapp"
         self.navigator.map("/ping") { URL, values in
-            NSNotificationCenter.defaultCenter().postNotificationName("Ping", object: nil, userInfo: nil)
+            NotificationCenter.default.post(name: Notification.Name(rawValue: "Ping"), object: nil, userInfo: nil)
             return true
         }
-        self.expectationForNotification("Ping", object: nil, handler: nil)
+        self.expectation(forNotification: "Ping", object: nil, handler: nil)
         XCTAssertTrue(self.navigator.openURL("/ping"))
-        self.waitForExpectationsWithTimeout(1, handler: nil)
+        self.waitForExpectations(timeout: 1, handler: nil)
     }
 
     func testSchemeOpenURL_URLNavigable() {
@@ -229,12 +229,15 @@ class URLNavigatorPublicTests: XCTestCase {
 private class UserViewController: UIViewController, URLNavigable {
 
     var userID: Int?
+    var URL: URLConvertible?
 
     convenience required init?(URL: URLConvertible, values: [String : AnyObject]) {
         guard let id = values["id"] as? Int else {
             return nil
         }
+        
         self.init()
+        self.URL = URL
         self.userID = id
     }
 
@@ -243,12 +246,15 @@ private class UserViewController: UIViewController, URLNavigable {
 private class PostViewController: UIViewController, URLNavigable {
 
     var postTitle: String?
+    var URL: URLConvertible?
 
     convenience required init?(URL: URLConvertible, values: [String : AnyObject]) {
         guard let title = values["title"] as? String else {
             return nil
         }
+        
         self.init()
+        self.URL = URL
         self.postTitle = title
     }
     
@@ -268,7 +274,9 @@ private class WebViewController: UIViewController, URLNavigable {
 private class SearchViewController: UIViewController, URLNavigable {
 
     let query: String
-
+    var URL: URLConvertible?
+    
+    
     init(query: String) {
         self.query = query
         super.init(nibName: nil, bundle: nil)
@@ -279,6 +287,7 @@ private class SearchViewController: UIViewController, URLNavigable {
             return nil
         }
         self.init(query: query)
+        self.URL = URL
     }
     
     required init?(coder aDecoder: NSCoder) {
